@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "WA Group Summarizer",
+    "slug": "wa-group-summarizer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "android": {
+      "package": "com.hurzy.wagroupsummarizer",
+      "adaptiveIcon": {
+        "backgroundColor": "#10b981"
+      },
+      "permissions": [
+        "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.INTERNET"
+      ]
+    },
+    "plugins": [
+      [
+        "react-native-android-notification-listener"
+      ]
+    ]
+  }
+}
