@@ -46,6 +46,10 @@ jobs:
         working-directory: mobile_summarizer_app/android
         run: |
           chmod +x gradlew
+          # The generated wrapper requests the "-all" distribution (sources +
+          # docs), which is not needed to build the APK and is a much larger
+          # download. Use "-bin" instead.
+          sed -i 's/gradle-\([0-9.]*\)-all\.zip/gradle-\1-bin.zip/' gradle/wrapper/gradle-wrapper.properties
           # The wrapper downloads the Gradle distribution from
           # services.gradle.org, which intermittently returns 5xx. Fetch it
           # first (with retries) so a transient CDN hiccup does not fail the
