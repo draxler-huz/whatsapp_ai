@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "com.hurzy.wagroupsummarizer",
+      "allowBackup": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#10b981"
