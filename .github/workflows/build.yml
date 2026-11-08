@@ -46,25 +46,17 @@ jobs:
         working-directory: mobile_summarizer_app/android
         run: |
           chmod +x gradlew
-          # The generated wrapper requests the "-all" distribution (sources +
-          # docs), which is not needed to build the APK and is a much larger
-          # download. Use "-bin" instead.
+          # Use the smaller "-bin" distribution (sources/docs are not needed
+          # to build the APK).
           sed -i 's/gradle-\([0-9.]*\)-all\.zip/gradle-\1-bin.zip/' gradle/wrapper/gradle-wrapper.properties
-          # The wrapper downloads the Gradle distribution from
-          # services.gradle.org, which intermittently returns 5xx. Fetch it
-          # first (with retries) so a transient CDN hiccup does not fail the
-          # build, then run the build once so real errors fail fast.
-          for attempt in 1 2 3 4 5; do
-            if ./gradlew --version > /dev/null 2>&1; then
-              break
-            fi
-            if [ "$attempt" = 5 ]; then
-              echo "Failed to fetch the Gradle distribution after 5 attempts"
-              exit 1
-            fi
-            echo "Gradle distribution download attempt $attempt failed; retrying in 30s..."
-            sleep 30
-          done
+          # The wrapper's Java downloader aborts on the first 5xx, and
+          # services.gradle.org intermittently returns 5xx. Fetch the
+          # distribution with curl (which retries) and point the wrapper at
+          # the local copy.
+          DIST_URL=$(grep -oP '(?<=distributionUrl=).*' gradle/wrapper/gradle-wrapper.properties | tr -d '\\')
+          curl -fL --retry 10 --retry-all-errors --retry-delay 5 --connect-timeout 20 -o /tmp/gradle-dist.zip "$DIST_URL"
+          sed -i "s|^distributionUrl=.*|distributionUrl=file\\:///tmp/gradle-dist.zip|" gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/^validateDistributionUrl=.*/validateDistributionUrl=false/' gradle/wrapper/gradle-wrapper.properties
           ./gradlew assembleRelease --no-daemon
 
       - name: 📤 Upload APK Artifact
