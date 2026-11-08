@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp AI Announcement Bot</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .chat-bubble {
+            background-color: #d9fdd3;
+            box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+        }
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+        .step-active {
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased font-sans">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white text-xl shadow-md">
+                    💬
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                        WhatsApp AI Announcement Agent
+                        <span class="text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full">Guided Workflow</span>
+                    </h1>
+                    <p class="text-xs text-slate-500">Scan &bull; Choose Groups &bull; Upload/Draft &bull; Broadcast</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div id="connectionPill" class="text-xs font-semibold px-3 py-1.5 rounded-lg border flex items-center gap-2 bg-slate-100 border-slate-200 text-slate-600">
+                    <span id="connectionDot" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                    <span id="connectionText">WhatsApp Disconnected</span>
+                </div>
+                <button onclick="checkStatus(true)" class="text-xs font-medium text-slate-600 hover:text-slate-900 bg-white px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 transition">
+                    🔄 Refresh
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto px-4 py-8 space-y-8">
+
+        <!-- Toast Notification Area -->
+        <div id="toastArea" class="fixed top-16 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+        <!-- 4-STEP PROGRESS BAR -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-medium text-slate-600">
+            <div id="indicatorStep1" class="bg-white p-3 rounded-xl border-2 border-emerald-500 flex items-center gap-2.5 shadow-xs">
+                <span class="w-6 h-6 rounded-full bg-emerald-500 text-white font-bold flex items-center justify-center text-xs">1</span>
+                <div>
+                    <span class="font-bold text-slate-800 block">Open WhatsApp</span>
+                    <span class="text-[11px] text-slate-400">Scan QR Code</span>
+                </div>
+            </div>
+            <div id="indicatorStep2" class="bg-white p-3 rounded-xl border border-slate-200 flex items-center gap-2.5 shadow-xs">
+                <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs">2</span>
+                <div>
+                    <span class="font-bold text-slate-800 block">Choose Groups</span>
+                    <span class="text-[11px] text-slate-400">Select recipients</span>
+                </div>
+            </div>
+            <div id="indicatorStep3" class="bg-white p-3 rounded-xl border border-slate-200 flex items-center gap-2.5 shadow-xs">
+                <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs">3</span>
+                <div>
+                    <span class="font-bold text-slate-800 block">Draft / Upload</span>
+                    <span class="text-[11px] text-slate-400">AI format</span>
+                </div>
+            </div>
+            <div id="indicatorStep4" class="bg-white p-3 rounded-xl border border-slate-200 flex items-center gap-2.5 shadow-xs">
+                <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs">4</span>
+                <div>
+                    <span class="font-bold text-slate-800 block">Broadcast</span>
+                    <span class="text-[11px] text-slate-400">Deliver via Agent</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 1: OPEN WHATSAPP & SCAN QR -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-sm">1</span>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Step 1: Open WhatsApp &amp; Scan QR Code</h2>
+                        <p class="text-xs text-slate-500">Opens Chrome with WhatsApp Web. Scan the QR code once with your phone to log in.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="openWhatsAppBtn" onclick="openWhatsApp()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition shadow-xs flex items-center gap-2">
+                        <span id="openSpinner" class="hidden animate-spin">🔄</span>
+                        <span id="openBtnText">🌐 Open WhatsApp in Browser</span>
+                    </button>
+                    <button onclick="closeWhatsApp()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-200 transition">
+                        ✖ Close Window
+                    </button>
+                </div>
+            </div>
+
+            <!-- Real-time Status Card -->
+            <div id="statusAlertBox" class="p-3.5 rounded-xl text-xs bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span id="statusIcon">ℹ️</span>
+                    <span id="statusDetail">Click "Open WhatsApp in Browser" above to start your WhatsApp Web session.</span>
+                </div>
+                <span id="autoPollBadge" class="hidden text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Detecting Login...</span>
+            </div>
+        </section>
+
+        <!-- STEP 2: CHOOSE GROUPS -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4 mb-4">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-800 font-bold flex items-center justify-center text-sm">2</span>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Step 2: Choose Target Groups</h2>
+                        <p class="text-xs text-slate-500">Select which WhatsApp groups will receive your announcement.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="loadGroupsFromWhatsApp()" id="fetchGroupsBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition shadow-xs flex items-center gap-1.5">
+                        <span id="groupsSpinner" class="hidden animate-spin">🔄</span>
+                        <span>📋 Load Groups from WhatsApp</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Group Search & Select All Controls -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                <div class="relative flex-1 max-w-sm">
+                    <input type="text" id="groupSearchInput" oninput="filterGroups()" placeholder="🔍 Filter groups..." class="w-full text-xs rounded-xl border border-slate-300 pl-3 pr-3 py-2 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="selectedCountBadge" class="text-xs bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-lg border border-indigo-200">0 Groups Selected</span>
+                    <button type="button" onclick="selectAllGroups(true)" class="text-xs text-slate-600 hover:text-indigo-600 font-semibold px-2 py-1">Select All</button>
+                    <button type="button" onclick="selectAllGroups(false)" class="text-xs text-slate-400 hover:text-slate-600 font-semibold px-2 py-1">Clear</button>
+                </div>
+            </div>
+
+            <!-- Groups Checkbox Container -->
+            <div id="groupsListContainer" class="max-h-56 overflow-y-auto custom-scroll border border-slate-200 rounded-xl p-3 bg-slate-50/70 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                <div class="col-span-full py-6 text-center text-slate-400 text-xs">
+                    Connect WhatsApp in Step 1, then click <strong class="text-indigo-600 font-semibold">"Load Groups from WhatsApp"</strong> to inspect your chats.
+                </div>
+            </div>
+
+            <!-- Manual Group Fallback Input -->
+            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center gap-2">
+                <span class="text-xs text-slate-500 whitespace-nowrap">Or add manually:</span>
+                <input type="text" id="manualGroupName" placeholder="Enter group name (e.g. Core Team)" class="flex-1 text-xs rounded-xl border border-slate-300 px-3 py-2 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <button type="button" onclick="addManualGroup()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-3 py-2 rounded-xl transition">
+                    + Add to List
+                </button>
+            </div>
+        </section>
+
+        <!-- STEP 3: UPLOAD / DRAFT ANNOUNCEMENT & PREVIEW -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex items-center gap-3 border-b border-slate-100 pb-4 mb-4">
+                <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-sm">3</span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Step 3: Upload or Draft Announcement</h2>
+                    <p class="text-xs text-slate-500">Upload notes file or type instructions, then generate an AI-polished WhatsApp announcement.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                
+                <!-- Left: Draft / Upload Area -->
+                <div class="space-y-4">
+                    <!-- File Upload Zone -->
+                    <div id="dropZone" class="border-2 border-dashed border-slate-300 hover:border-amber-500 rounded-2xl p-4 text-center bg-slate-50/60 hover:bg-amber-50/30 transition cursor-pointer" onclick="document.getElementById('fileInput').click()">
+                        <input type="file" id="fileInput" accept=".txt,.md,.doc,.docx,.csv,.json,.log" class="hidden" onchange="handleFileSelect(event)">
+                        <div class="flex flex-col items-center justify-center gap-1">
+                            <span class="text-2xl">📁</span>
+                            <span class="text-xs font-bold text-slate-700">Click to Upload Announcement File or Drag &amp; Drop</span>
+                            <span class="text-[11px] text-slate-400">Supports .txt, .md, .csv, .json notes files</span>
+                        </div>
+                    </div>
+
+                    <!-- Tone / Style Template -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">
+                            Announcement Style / Tone
+                        </label>
+                        <select id="templateSelect" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none transition">
+                            <option value="General">📢 General Announcement (Professional &amp; Balanced)</option>
+                            <option value="Meeting Reminder">⏰ Meeting Reminder (Urgent time, link &amp; agenda sync)</option>
+                            <option value="Urgent Alert">🚨 Urgent Alert (High priority warning &amp; action items)</option>
+                            <option value="Casual Event">🎉 Casual Event / Social (Warm &amp; friendly)</option>
+                            <option value="Project Update">📊 Project Status Update (Milestones &amp; blockers)</option>
+                        </select>
+                    </div>
+
+                    <!-- Raw Textarea -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                                Raw Notes / Instructions
+                            </label>
+                            <div class="flex gap-1.5 text-xs">
+                                <button type="button" onclick="loadExample('meeting')" class="text-[11px] text-slate-500 hover:text-amber-700 underline">+ Meeting</button>
+                                <button type="button" onclick="loadExample('maintenance')" class="text-[11px] text-slate-500 hover:text-amber-700 underline">+ Downtime</button>
+                                <button type="button" onclick="loadExample('lunch')" class="text-[11px] text-slate-500 hover:text-amber-700 underline">+ Social</button>
+                            </div>
+                        </div>
+                        <textarea id="rawText" rows="6" placeholder="Type rough notes or paste meeting info here...&#10;e.g., Team sync tomorrow at 10 AM on Google Meet regarding budget. Bring laptops." class="w-full rounded-xl border border-slate-300 p-3 text-xs text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-amber-500 focus:outline-none transition custom-scroll"></textarea>
+                    </div>
+
+                    <!-- Generate AI Button -->
+                    <button id="generateBtn" onclick="generateAIPreview()" class="w-full bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white text-xs font-semibold py-3 rounded-xl transition shadow-xs flex items-center justify-center gap-2">
+                        <span id="generateSpinner" class="hidden animate-spin">🔄</span>
+                        <span id="generateBtnText">✨ Generate AI-Formatted Announcement</span>
+                    </button>
+                </div>
+
+                <!-- Right: Preview Bubble & Edit Toggle -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            WhatsApp Message Preview
+                        </span>
+                        <div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-xs font-semibold">
+                            <button id="viewBubbleBtn" onclick="togglePreviewMode('bubble')" class="bg-white text-emerald-800 px-2 py-0.5 rounded-md shadow-xs text-[11px]">Formatted</button>
+                            <button id="viewEditBtn" onclick="togglePreviewMode('edit')" class="text-slate-600 px-2 py-0.5 rounded-md hover:text-slate-900 text-[11px]">Edit Text</button>
+                        </div>
+                    </div>
+
+                    <!-- WhatsApp Preview Box -->
+                    <div class="bg-slate-100/70 border border-slate-200 rounded-2xl p-4 min-h-[250px] flex flex-col justify-between">
+                        <div>
+                            <div id="bubbleContainer" class="chat-bubble rounded-2xl rounded-tl-sm p-3.5 text-xs text-slate-900 whitespace-pre-wrap leading-relaxed select-text border border-emerald-200/50">
+                                <div id="previewBox" class="italic text-slate-500">Your formatted announcement will appear here after clicking "Generate AI Announcement" or typing notes...</div>
+                            </div>
+                            <textarea id="editableBox" oninput="updateCharCount()" class="hidden w-full h-[210px] rounded-xl border border-slate-300 p-3 text-xs font-mono text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none custom-scroll bg-white" placeholder="Edit announcement directly..."></textarea>
+                        </div>
+
+                        <div class="text-[11px] text-slate-400 mt-2 flex justify-between items-center border-t border-slate-200/60 pt-2">
+                            <span id="charCount">0 characters</span>
+                            <span>*bold* &bull; _italics_ &bull; emojis supported</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- STEP 4: AGENT BROADCASTS -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex items-center gap-3 border-b border-slate-100 pb-4 mb-4">
+                <span class="w-8 h-8 rounded-xl bg-rose-100 text-rose-800 font-bold flex items-center justify-center text-sm">4</span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Step 4: Agent Broadcasts to WhatsApp</h2>
+                    <p class="text-xs text-slate-500">The automation agent will open each selected group, paste your announcement, and hit send.</p>
+                </div>
+            </div>
+
+            <!-- Pre-flight Summary Card -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div>
+                    <span class="text-slate-500 block mb-0.5">Ready to broadcast to:</span>
+                    <span id="summaryGroupsText" class="font-bold text-slate-800">No groups selected yet</span>
+                </div>
+                <div>
+                    <button id="broadcastBtn" onclick="broadcastNow()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                        <span id="broadcastSpinner" class="hidden animate-spin">⚙️</span>
+                        <span id="broadcastBtnText">🚀 Broadcast Now</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Delivery Results Box -->
+            <div id="resultsBox" class="hidden space-y-2 mt-4 pt-4 border-t border-slate-100">
+                <span class="text-xs font-bold text-slate-700 uppercase tracking-wider block">Live Delivery Report</span>
+                <div id="resultsList" class="space-y-1.5 text-xs"></div>
+            </div>
+        </section>
+
+        <!-- PAST BROADCAST LOGS -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800">📜 Past Broadcast Logs</h3>
+                    <p class="text-[11px] text-slate-400">Stored locally in history.json</p>
+                </div>
+                <button onclick="fetchHistory()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 transition">
+                    🔄 Refresh Log
+                </button>
+            </div>
+            <div id="historyContainer" class="space-y-2 text-xs">
+                <p class="text-slate-400 italic">No broadcast logs yet.</p>
+            </div>
+        </section>
+
+        <!-- BROADCAST CONFIRMATION MODAL -->
+        <div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full mx-4 overflow-hidden">
+                <div class="bg-amber-50 border-b border-amber-200 px-6 py-4 flex items-center gap-3">
+                    <span class="text-2xl">⚠️</span>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">Confirm Broadcast</h3>
+                        <p class="text-xs text-slate-500">Please review before sending.</p>
+                    </div>
+                </div>
+                <div class="px-6 py-4 space-y-3 max-h-[50vh] overflow-y-auto custom-scroll">
+                    <div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Target Groups</span>
+                        <div id="confirmGroups" class="text-xs text-slate-800 font-medium bg-slate-50 rounded-lg p-2 border border-slate-200"></div>
+                    </div>
+                    <div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Message Preview</span>
+                        <div id="confirmMessage" class="text-xs text-slate-800 whitespace-pre-wrap bg-slate-50 rounded-lg p-2 border border-slate-200 max-h-40 overflow-y-auto custom-scroll"></div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+                    <button onclick="closeConfirmModal()" class="text-xs font-semibold text-slate-600 hover:text-slate-900 px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition">
+                        ✖ Cancel
+                    </button>
+                    <button onclick="confirmAndBroadcast()" class="text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg transition flex items-center gap-1.5">
+                        🚀 Yes, Broadcast Now
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-6xl mx-auto px-4 py-8 text-center text-xs text-slate-400">
+        WhatsApp AI Announcement Bot &bull; Powered by FastAPI, Google Gemini &amp; Playwright
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const API_URL = window.location.protocol.startsWith('http') 
+            ? window.location.origin 
+            : "http://127.0.0.1:8050";
+        let availableGroups = [];
+        let selectedGroups = new Set();
+        let previewMode = 'bubble'; // 'bubble' or 'edit'
+        let pollInterval = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            checkStatus(false);
+            fetchHistory();
+            setupDragAndDrop();
+        });
+
+        // --- STEP 1: WHATSAPP CONNECTION & STATUS ---
+
+        async function openWhatsApp() {
+            const btn = document.getElementById('openWhatsAppBtn');
+            const spinner = document.getElementById('openSpinner');
+            const btnText = document.getElementById('openBtnText');
+
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            btnText.innerText = "Launching Browser...";
+
+            try {
+                const res = await fetch(`${API_URL}/api/whatsapp/open`, { method: 'POST' });
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Server error ' + res.status);
+                }
+
+                showToast(data.message || 'WhatsApp Web opened.', 'info');
+                updateStatusUI(data.status, data.message);
+                startStatusPolling();
+            } catch (err) {
+                showToast('Failed to open WhatsApp browser: ' + err.message, 'error');
+                updateStatusUI('disconnected', err.message);
+                stopStatusPolling();
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+                btnText.innerText = "🌐 Open WhatsApp in Browser";
+            }
+        }
+
+        async function checkStatus(manual = false) {
+            try {
+                const res = await fetch(`${API_URL}/api/whatsapp/status`);
+                if (!res.ok) return;
+                const data = await res.json();
+                updateStatusUI(data.status, data.message);
+                if (manual) showToast(`WhatsApp status: ${data.status}`, 'info');
+                
+                if (data.status === 'logged_in') {
+                    stopStatusPolling();
+                    // Auto load groups if not yet loaded
+                    if (availableGroups.length === 0) {
+                        loadGroupsFromWhatsApp(false);
+                    }
+                }
+            } catch (e) {
+                updateStatusUI('disconnected', 'Backend is offline');
+            }
+        }
+
+        function startStatusPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+            document.getElementById('autoPollBadge').classList.remove('hidden');
+            pollInterval = setInterval(async () => {
+                await checkStatus(false);
+            }, 3000);
+        }
+
+        function stopStatusPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+            document.getElementById('autoPollBadge').classList.add('hidden');
+        }
+
+        function updateStatusUI(status, message) {
+            const pill = document.getElementById('connectionPill');
+            const dot = document.getElementById('connectionDot');
+            const text = document.getElementById('connectionText');
+            const alertBox = document.getElementById('statusAlertBox');
+            const statusDetail = document.getElementById('statusDetail');
+            const statusIcon = document.getElementById('statusIcon');
+            const step1 = document.getElementById('indicatorStep1');
+
+            if (status === 'logged_in') {
+                pill.className = "text-xs font-semibold px-3 py-1.5 rounded-lg border flex items-center gap-2 bg-emerald-50 border-emerald-300 text-emerald-800";
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+                text.innerText = "WhatsApp Connected & Ready";
+                
+                alertBox.className = "p-3.5 rounded-xl text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-between";
+                statusIcon.innerText = "✅";
+                statusDetail.innerText = "WhatsApp Web is logged in! You can now select groups in Step 2.";
+                step1.classList.add('border-emerald-500');
+            } else if (status === 'waiting_qr') {
+                pill.className = "text-xs font-semibold px-3 py-1.5 rounded-lg border flex items-center gap-2 bg-amber-50 border-amber-300 text-amber-800";
+                dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse";
+                text.innerText = "Waiting for QR Scan";
+
+                alertBox.className = "p-3.5 rounded-xl text-xs bg-amber-50 border border-amber-200 text-amber-800 flex items-center justify-between";
+                statusIcon.innerText = "📷";
+                statusDetail.innerText = "Please switch to the Chrome window and scan the QR code with WhatsApp on your phone.";
+            } else {
+                pill.className = "text-xs font-semibold px-3 py-1.5 rounded-lg border flex items-center gap-2 bg-slate-100 border-slate-200 text-slate-600";
+                dot.className = "w-2.5 h-2.5 rounded-full bg-slate-400";
+                text.innerText = "WhatsApp Disconnected";
+
+                alertBox.className = "p-3.5 rounded-xl text-xs bg-slate-50 border border-slate-200 text-slate-600 flex items-center justify-between";
+                statusIcon.innerText = "ℹ️";
+                statusDetail.innerText = "Click 'Open WhatsApp in Browser' above to start your WhatsApp Web session.";
+            }
+        }
+
+        async function closeWhatsApp() {
+            try {
+                await fetch(`${API_URL}/api/whatsapp/close`, { method: 'POST' });
+                showToast('WhatsApp browser closed.', 'info');
+                stopStatusPolling();
+                checkStatus(false);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // --- STEP 2: LOAD & CHOOSE GROUPS ---
+
+        async function loadGroupsFromWhatsApp(showNotification = true) {
+            const btn = document.getElementById('fetchGroupsBtn');
+            const spinner = document.getElementById('groupsSpinner');
+
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+
+            try {
+                const res = await fetch(`${API_URL}/api/whatsapp/groups`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Could not harvest groups.');
+                }
+
+                availableGroups = data.groups || [];
+                renderGroupsList(availableGroups);
+
+                if (showNotification) {
+                    showToast(`Loaded ${availableGroups.length} groups from WhatsApp!`, 'success');
+                }
+                document.getElementById('indicatorStep2').classList.add('border-indigo-500');
+            } catch (err) {
+                if (showNotification) showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function renderGroupsList(groupsToRender) {
+            const container = document.getElementById('groupsListContainer');
+            if (groupsToRender.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-6 text-center text-slate-400 text-xs">No matching groups found.</div>`;
+                return;
+            }
+
+            container.innerHTML = "";
+            groupsToRender.forEach(name => {
+                const isChecked = selectedGroups.has(name);
+                const item = document.createElement('label');
+                item.className = `flex items-center gap-2.5 p-2 rounded-xl border transition cursor-pointer text-xs ${isChecked ? 'bg-indigo-50/80 border-indigo-400 font-medium text-indigo-900' : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'}`;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = isChecked;
+                checkbox.className = 'rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4';
+                checkbox.addEventListener('change', () => {
+                    toggleGroupSelection(name, checkbox.checked);
+                });
+
+                const span = document.createElement('span');
+                span.className = 'truncate';
+                span.title = name;
+                span.textContent = '👥 ' + name;
+
+                item.appendChild(checkbox);
+                item.appendChild(span);
+                container.appendChild(item);
+            });
+            updateSelectedSummary();
+        }
+
+        function toggleGroupSelection(groupName, isChecked) {
+            if (isChecked) {
+                selectedGroups.add(groupName);
+            } else {
+                selectedGroups.delete(groupName);
+            }
+            updateSelectedSummary();
+            renderGroupsList(getFilteredGroups());
+        }
+
+        function selectAllGroups(select) {
+            const current = getFilteredGroups();
+            current.forEach(name => {
+                if (select) selectedGroups.add(name);
+                else selectedGroups.delete(name);
+            });
+            updateSelectedSummary();
+            renderGroupsList(current);
+        }
+
+        function getFilteredGroups() {
+            const query = document.getElementById('groupSearchInput').value.toLowerCase().trim();
+            if (!query) return availableGroups;
+            return availableGroups.filter(g => g.toLowerCase().includes(query));
+        }
+
+        function filterGroups() {
+            renderGroupsList(getFilteredGroups());
+        }
+
+        function addManualGroup() {
+            const input = document.getElementById('manualGroupName');
+            const name = input.value.trim();
+            if (!name) return;
+            if (!availableGroups.includes(name)) {
+                availableGroups.unshift(name);
+            }
+            selectedGroups.add(name);
+            input.value = "";
+            renderGroupsList(availableGroups);
+            showToast(`Added '${name}' to target groups.`, 'success');
+        }
+
+        function updateSelectedSummary() {
+            const count = selectedGroups.size;
+            document.getElementById('selectedCountBadge').innerText = `${count} Groups Selected`;
+            const summary = document.getElementById('summaryGroupsText');
+            if (count === 0) {
+                summary.innerText = "No groups selected yet (Choose in Step 2)";
+                summary.className = "text-rose-600 font-semibold";
+            } else {
+                summary.innerText = Array.from(selectedGroups).join(', ');
+                summary.className = "font-bold text-slate-800";
+            }
+        }
+
+        // --- STEP 3: UPLOAD FILE & AI FORMATTING ---
+
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('border-amber-500', 'bg-amber-50/50'), false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('border-amber-500', 'bg-amber-50/50'), false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) processUploadedFile(files[0]);
+            });
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) processUploadedFile(files[0]);
+        }
+
+        async function processUploadedFile(file) {
+            showToast(`Reading file: ${file.name}...`, 'info');
+            // Try direct client-side read for standard text files
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                document.getElementById('rawText').value = text;
+                showToast(`Loaded notes from ${file.name}!`, 'success');
+            };
+            reader.onerror = async () => {
+                // Fallback to backend parser
+                const formData = new FormData();
+                formData.append('file', file);
+                try {
+                    const res = await fetch(`${API_URL}/api/upload-announcement`, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    if (data.text) {
+                        document.getElementById('rawText').value = data.text;
+                        showToast(`Uploaded ${data.filename}!`, 'success');
+                    }
+                } catch (err) {
+                    showToast('Failed to read file: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function loadExample(type) {
+            const raw = document.getElementById('rawText');
+            const t = document.getElementById('templateSelect');
+            if (type === 'meeting') {
+                t.value = "Meeting Reminder";
+                raw.value = "Urgent sync tomorrow at 10:00 AM regarding Q3 budget and timeline adjustments. We'll meet on Google Meet. Make sure everyone has reviewed the metrics spreadsheet before joining.";
+            } else if (type === 'maintenance') {
+                t.value = "Urgent Alert";
+                raw.value = "Scheduled maintenance window tonight from 11:00 PM to 01:00 AM UTC. Staging and production databases will undergo updates. Expect temporary downtime for 30 minutes.";
+            } else if (type === 'lunch') {
+                t.value = "Casual Event";
+                raw.value = "Team lunch this Friday at 1 PM to celebrate hitting our sprint goals! Heading to Mario's Italian Bistro. Let Sarah know dietary restrictions by Thursday.";
+            }
+        }
+
+        async function generateAIPreview() {
+            const rawText = document.getElementById('rawText').value.trim();
+            const template = document.getElementById('templateSelect').value;
+
+            if (!rawText) {
+                showToast('Please type raw instructions or upload a file first.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('generateBtn');
+            const spinner = document.getElementById('generateSpinner');
+            const btnText = document.getElementById('generateBtnText');
+
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            btnText.innerText = "Formatting with AI...";
+            document.getElementById('previewBox').innerText = "Generating AI-formatted announcement...";
+
+            try {
+                const response = await fetch(`${API_URL}/api/generate-announcement`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ raw_text: rawText, template: template })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Failed to generate');
+
+                document.getElementById('previewBox').innerText = data.formatted_message;
+                document.getElementById('editableBox').value = data.formatted_message;
+                updateCharCount();
+                showToast('AI Announcement formatted successfully!', 'success');
+                document.getElementById('indicatorStep3').classList.add('border-amber-500');
+            } catch (err) {
+                document.getElementById('previewBox').innerText = "Failed to generate announcement. Please check your API key in .env and backend server.";
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+                btnText.innerText = "✨ Generate AI-Formatted Announcement";
+            }
+        }
+
+        function togglePreviewMode(mode) {
+            previewMode = mode;
+            const bubble = document.getElementById('bubbleContainer');
+            const editor = document.getElementById('editableBox');
+            const bubbleBtn = document.getElementById('viewBubbleBtn');
+            const editBtn = document.getElementById('viewEditBtn');
+
+            if (mode === 'bubble') {
+                document.getElementById('previewBox').innerText = editor.value || "Your formatted announcement will appear here...";
+                bubble.classList.remove('hidden');
+                editor.classList.add('hidden');
+                bubbleBtn.className = "bg-white text-emerald-800 px-2 py-0.5 rounded-md shadow-xs text-[11px]";
+                editBtn.className = "text-slate-600 px-2 py-0.5 rounded-md hover:text-slate-900 text-[11px]";
+            } else {
+                const cur = document.getElementById('previewBox').innerText;
+                if (!cur.startsWith("Your formatted") && !cur.startsWith("Generating") && !cur.startsWith("Failed")) {
+                    editor.value = cur;
+                }
+                bubble.classList.add('hidden');
+                editor.classList.remove('hidden');
+                editBtn.className = "bg-white text-emerald-800 px-2 py-0.5 rounded-md shadow-xs text-[11px]";
+                bubbleBtn.className = "text-slate-600 px-2 py-0.5 rounded-md hover:text-slate-900 text-[11px]";
+                editor.focus();
+            }
+            updateCharCount();
+        }
+
+        function updateCharCount() {
+            const text = previewMode === 'bubble' 
+                ? document.getElementById('previewBox').innerText 
+                : document.getElementById('editableBox').value;
+            const count = (text.startsWith("Your formatted") || text.startsWith("Generating")) ? 0 : text.length;
+            document.getElementById('charCount').innerText = `${count} characters`;
+        }
+
+        // --- STEP 4: AGENT BROADCAST ---
+
+        let pendingBroadcastMessage = null;
+
+        async function broadcastNow() {
+            if (selectedGroups.size === 0) {
+                showToast('Please select at least one WhatsApp group in Step 2.', 'error');
+                return;
+            }
+
+            let message = previewMode === 'bubble'
+                ? document.getElementById('previewBox').innerText
+                : document.getElementById('editableBox').value;
+
+            if (message.startsWith("Your formatted") || message.startsWith("Generating") || message.startsWith("Failed")) {
+                const raw = document.getElementById('rawText').value.trim();
+                if (!raw) {
+                    showToast('Please type notes or generate an announcement first.', 'error');
+                    return;
+                }
+                message = raw;
+            }
+
+            // Show confirmation modal instead of sending immediately
+            pendingBroadcastMessage = message;
+            const groupList = Array.from(selectedGroups);
+            document.getElementById('confirmGroups').textContent = groupList.join(', ') + ` (${groupList.length} group${groupList.length !== 1 ? 's' : ''})`;
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            pendingBroadcastMessage = null;
+        }
+
+        async function confirmAndBroadcast() {
+            closeConfirmModal();
+
+            if (!pendingBroadcastMessage) return;
+            const message = pendingBroadcastMessage;
+            pendingBroadcastMessage = null;
+
+            const btn = document.getElementById('broadcastBtn');
+            const spinner = document.getElementById('broadcastSpinner');
+            const btnText = document.getElementById('broadcastBtnText');
+
+            btn.disabled = true;
+            spinner.classList.remove('hidden');
+            btnText.innerText = "Broadcasting (Check Browser)...";
+            showToast('Agent is dispatching announcements...', 'info');
+
+            try {
+                const response = await fetch(`${API_URL}/api/broadcast`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        raw_text: document.getElementById('rawText').value,
+                        group_names: Array.from(selectedGroups),
+                        formatted_message: message,
+                        template: document.getElementById('templateSelect').value
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Broadcast failed.');
+
+                if (data.success) {
+                    showToast('Broadcast complete! See report below.', 'success');
+                    displayResults(data.delivery_status);
+                    fetchHistory();
+                    document.getElementById('indicatorStep4').classList.add('border-emerald-500');
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                spinner.classList.add('hidden');
+                btnText.innerText = "🚀 Broadcast Now";
+            }
+        }
+
+        function displayResults(delivery) {
+            const box = document.getElementById('resultsBox');
+            const list = document.getElementById('resultsList');
+            list.innerHTML = "";
+
+            if (!delivery) return;
+            box.classList.remove('hidden');
+
+            const failedGroups = [];
+
+            for (const [group, status] of Object.entries(delivery)) {
+                const isSuccess = status === 'Success';
+                if (!isSuccess) {
+                    failedGroups.push(group);
+                }
+                const row = document.createElement('div');
+                row.className = `flex items-center justify-between p-2 rounded-lg ${isSuccess ? 'bg-emerald-100/70 text-emerald-900 border border-emerald-300' : 'bg-rose-100/70 text-rose-900 border border-rose-300'}`;
+                row.innerHTML = `
+                    <span class="font-medium">👥 ${escapeHtml(group)}</span>
+                    <span class="font-bold text-[11px] uppercase">${escapeHtml(status)}</span>
+                `;
+                list.appendChild(row);
+            }
+
+            if (failedGroups.length > 0) {
+                const retryRow = document.createElement('div');
+                retryRow.className = "pt-2 flex justify-end";
+                retryRow.innerHTML = `
+                    <button id="retryFailedBtn" class="text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg shadow-xs transition flex items-center gap-1.5">
+                        🔄 Select Only Failed Groups (${failedGroups.length}) to Retry
+                    </button>
+                `;
+                retryRow.querySelector('button').addEventListener('click', () => {
+                    selectedGroups.clear();
+                    failedGroups.forEach(g => selectedGroups.add(g));
+                    updateSelectedSummary();
+                    renderGroupsList(getFilteredGroups());
+                    showToast(`Selected ${failedGroups.length} failed groups. Ready to retry broadcast.`, 'info');
+                    document.getElementById('broadcastBtn').scrollIntoView({ behavior: 'smooth' });
+                });
+                list.appendChild(retryRow);
+            }
+
+            box.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- HISTORY LOGS ---
+
+        async function fetchHistory() {
+            const container = document.getElementById('historyContainer');
+            try {
+                const res = await fetch(`${API_URL}/api/history`);
+                if (!res.ok) return;
+                const items = await res.json();
+                if (!items || items.length === 0) {
+                    container.innerHTML = `<p class="text-slate-400 italic">No broadcast logs yet.</p>`;
+                    return;
+                }
+                container.innerHTML = "";
+                items.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = "bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 hover:border-slate-300 transition";
+                    const groupsText = Array.isArray(item.group_names) ? item.group_names.join(', ') : '';
+                    row.innerHTML = `
+                        <div class="flex items-center justify-between text-slate-500 border-b border-slate-200/60 pb-1">
+                            <span class="font-semibold text-slate-700">Sent to: <span class="text-emerald-700 font-bold">${escapeHtml(groupsText)}</span></span>
+                            <span class="text-[11px] text-slate-400">${item.timestamp} &bull; ${item.template || 'General'}</span>
+                        </div>
+                        <div class="text-slate-800 whitespace-pre-wrap bg-white p-2 rounded-lg border border-slate-200/80 font-sans">${escapeHtml(item.formatted_message)}</div>
+                    `;
+                    container.appendChild(row);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function showToast(message, type = "info") {
+            const toastArea = document.getElementById('toastArea');
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600 text-white' : type === 'error' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-white';
+            toast.className = `${bgClass} px-4 py-2.5 rounded-xl text-xs font-medium shadow-lg transition-all transform duration-300 pointer-events-auto flex items-center gap-2`;
+            toast.innerHTML = `<span>${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span> <span>${escapeHtml(message)}</span>`;
+            toastArea.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-4');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+</html>

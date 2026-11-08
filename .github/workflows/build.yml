@@ -1,0 +1,45 @@
+name: Build Android APK (WA Summarizer Pro)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: ☕ Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: 📱 Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 📦 Install App Dependencies
+        working-directory: mobile_summarizer_app
+        run: npm install --legacy-peer-deps
+
+      - name: ⚙️ Generate Native Android Project
+        working-directory: mobile_summarizer_app
+        run: npx expo prebuild -p android --no-install
+
+      - name: 🔨 Build Release APK
+        working-directory: mobile_summarizer_app/android
+        run: ./gradlew assembleRelease
+
+      - name: 📤 Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wa-summarizer-pro-release-apk
+          path: mobile_summarizer_app/android/app/build/outputs/apk/release/*.apk

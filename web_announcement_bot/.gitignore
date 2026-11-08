@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Environment Variables & Secrets
+.env
+!.env.example
+
+# WhatsApp Playwright Persistent Session Data
+whatsapp_session/
+history.json
+
+# IDEs
+.vscode/
+.idea/
