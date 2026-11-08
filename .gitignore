@@ -5,6 +5,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Expo / React Native generated native projects (created by `expo prebuild`)
+mobile_summarizer_app/android/
+mobile_summarizer_app/ios/
+
 # Python
 __pycache__/
 *.py[cod]

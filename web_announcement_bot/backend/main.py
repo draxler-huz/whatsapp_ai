@@ -11,25 +11,33 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from backend.ai_agent import format_announcement
-from backend.whatsapp_bot import bot_instance, send_to_multiple_groups
+from backend.whatsapp_bot import bot_instance
 
 app = FastAPI(title="WhatsApp AI Announcement Bot", version="1.1.0")
 
-# Restrict CORS to localhost and local network origins rather than wildcard
+# Allowed browser origins can be extended via the CORS_ORIGINS env var
+# (comma-separated). Defaults cover the bundled dashboard on common ports.
+_default_origins = ",".join([
+    "http://localhost:8050",
+    "http://127.0.0.1:8050",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+])
+_origins = [
+    o.strip()
+    for o in os.getenv("CORS_ORIGINS", _default_origins).split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8050",
-        "http://127.0.0.1:8050",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
-    ],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -125,16 +133,18 @@ async def close_whatsapp_session():
 
 # --- STEP 3: UPLOAD & FORMAT ANNOUNCEMENT ---
 
-class UploadRequest(BaseModel):
-    filename: Optional[str] = "notes.txt"
-    content: str
-
 @app.post("/api/upload-announcement")
-async def upload_announcement_file(data: UploadRequest):
+async def upload_announcement_file(file: UploadFile = File(...)):
     """
-    Step 3: Accepts text content from an uploaded file (.txt, .md, .csv, .json, .log).
+    Step 3: Accepts an uploaded text file (.txt, .md, .csv, .json, .log) and
+    returns its decoded content. Browsers submit this as multipart/form-data.
     """
-    return {"filename": data.filename, "text": data.content}
+    raw = await file.read()
+    try:
+        content = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        content = raw.decode("latin-1", errors="replace")
+    return {"filename": file.filename or "uploaded.txt", "text": content}
 
 @app.post("/api/generate-announcement")
 async def generate_preview(data: GenerateRequest):

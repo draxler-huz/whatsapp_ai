@@ -343,7 +343,7 @@ ${chatContext}
 
       // API Payload: Static system instruction + Deterministic structured JSON output
       const res = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
         {
           method: 'POST',
           headers: {
@@ -370,7 +370,16 @@ ${chatContext}
       );
 
       const data = await res.json();
-      let rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      if (!res.ok) {
+        const apiMsg = data?.error?.message || `Request failed with status ${res.status}`;
+        throw new Error(apiMsg);
+      }
+
+      const rawJson = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!rawJson) {
+        throw new Error('Gemini returned an empty response.');
+      }
       const parsed = JSON.parse(rawJson);
 
       setDigestData(parsed);
