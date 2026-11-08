@@ -20,11 +20,8 @@ jobs:
       - name: ☕ Setup Java JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
-
-      - name: 📱 Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: 📦 Install App Dependencies
         working-directory: mobile_summarizer_app
@@ -34,9 +31,11 @@ jobs:
         working-directory: mobile_summarizer_app
         run: npx expo prebuild -p android --no-install
 
-      - name: 🔨 Build Release APK
+      - name: 🔨 Build Release APK via Gradle
         working-directory: mobile_summarizer_app/android
-        run: ./gradlew assembleRelease
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
 
       - name: 📤 Upload APK Artifact
         uses: actions/upload-artifact@v4
