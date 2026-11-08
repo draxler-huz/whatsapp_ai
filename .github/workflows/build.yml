@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
@@ -31,10 +33,30 @@ jobs:
         working-directory: mobile_summarizer_app
         run: npx expo prebuild -p android --no-install
 
+      - name: 💾 Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/wrapper
+            ~/.gradle/caches
+          key: gradle-${{ runner.os }}-${{ hashFiles('mobile_summarizer_app/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
       - name: 🔨 Build Release APK via Gradle
         working-directory: mobile_summarizer_app/android
         run: |
           chmod +x gradlew
+          # Use the smaller "-bin" distribution (sources/docs are not needed
+          # to build the APK).
+          sed -i 's/gradle-\([0-9.]*\)-all\.zip/gradle-\1-bin.zip/' gradle/wrapper/gradle-wrapper.properties
+          # The wrapper's Java downloader aborts on the first 5xx, and
+          # services.gradle.org intermittently returns 5xx. Fetch the
+          # distribution with curl (which retries) and point the wrapper at
+          # the local copy.
+          DIST_URL=$(grep -oP '(?<=distributionUrl=).*' gradle/wrapper/gradle-wrapper.properties | tr -d '\\')
+          curl -fL --retry 10 --retry-all-errors --retry-delay 5 --connect-timeout 20 -o /tmp/gradle-dist.zip "$DIST_URL"
+          sed -i "s|^distributionUrl=.*|distributionUrl=file\\:///tmp/gradle-dist.zip|" gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/^validateDistributionUrl=.*/validateDistributionUrl=false/' gradle/wrapper/gradle-wrapper.properties
           ./gradlew assembleRelease --no-daemon
 
       - name: 📤 Upload APK Artifact

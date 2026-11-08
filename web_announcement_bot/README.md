@@ -9,10 +9,13 @@ Compatible with **Google Gemini API** (Google AI Studio) and **OpenAI**.
 ## ⚡ Quick Start Guide
 
 ### 1. Add Your Google API Key
-Open [`.env`](file:///c:/Users/_hurzy_/Downloads/whatsapp%20ai/.env) and paste your Google Gemini API key:
+Create a `.env` file in the `web_announcement_bot/` folder (copy `.env.example`) and paste your Google Gemini API key:
 ```ini
-GEMINI_API_KEY=AIzaSyYourActualGoogleKeyHere
+GOOGLE_API_KEY=AIzaSyYourActualGoogleKeyHere
 ```
+
+> Optional: if you serve the dashboard from a different origin, set
+> `CORS_ORIGINS` to a comma-separated list of allowed origins.
 
 ### 2. Start the Server
 In your terminal, run:

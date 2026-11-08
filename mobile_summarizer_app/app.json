@@ -5,14 +5,17 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "splash": {
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#10b981"
     },
     "android": {
       "package": "com.hurzy.wagroupsummarizer",
+      "allowBackup": false,
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#10b981"
       },
       "permissions": [
@@ -20,11 +23,6 @@
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.INTERNET"
       ]
-    },
-    "plugins": [
-      [
-        "react-native-android-notification-listener"
-      ]
-    ]
+    }
   }
 }

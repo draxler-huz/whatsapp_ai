@@ -8,12 +8,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 load_dotenv(os.path.join(PROJECT_DIR, ".env"))
 
-# Supported Google Generative Language models in priority order
+# Supported Google Generative Language models in priority order.
+# Stable models first, then the "latest" alias, then preview models as fallback.
 GOOGLE_MODELS = [
-    "models/gemini-3-flash-preview",
     "models/gemini-3.8-flash",
     "models/gemini-flash-latest",
-    "models/gemini-3.1-pro-preview"
+    "models/gemini-3-flash-preview",
+    "models/gemini-3.1-pro-preview",
 ]
 
 def call_google_api(prompt: str, api_key: str) -> str:

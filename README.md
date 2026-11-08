@@ -12,9 +12,11 @@ whatsapp_ai/
 │   └── build.yml               # Automated Cloud CI/CD to build Android APK on GitHub
 ├── mobile_summarizer_app/      # Android App (WA Summarizer Pro Executive Edition)
 │   ├── App.js                  # Full React Native app with Notification Listener
+│   ├── index.js                # Expo entry point (registers the root component)
 │   ├── preview_3d.html         # Interactive 3D WebGL simulator & testbench
 │   ├── build_apk.bat           # 1-Click local/cloud APK compiler
 │   ├── app.json                # Android system permissions & config
+│   ├── assets/                 # App icon + adaptive icon
 │   └── package.json            # Node.js dependencies
 └── web_announcement_bot/       # FastAPI + Google Gemini Announcement Broadcaster
     ├── backend/
