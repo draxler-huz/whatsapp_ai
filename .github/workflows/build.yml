@@ -33,10 +33,34 @@ jobs:
         working-directory: mobile_summarizer_app
         run: npx expo prebuild -p android --no-install
 
+      - name: 💾 Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/wrapper
+            ~/.gradle/caches
+          key: gradle-${{ runner.os }}-${{ hashFiles('mobile_summarizer_app/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
       - name: 🔨 Build Release APK via Gradle
         working-directory: mobile_summarizer_app/android
         run: |
           chmod +x gradlew
+          # The wrapper downloads the Gradle distribution from
+          # services.gradle.org, which intermittently returns 5xx. Fetch it
+          # first (with retries) so a transient CDN hiccup does not fail the
+          # build, then run the build once so real errors fail fast.
+          for attempt in 1 2 3 4 5; do
+            if ./gradlew --version > /dev/null 2>&1; then
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "Failed to fetch the Gradle distribution after 5 attempts"
+              exit 1
+            fi
+            echo "Gradle distribution download attempt $attempt failed; retrying in 30s..."
+            sleep 30
+          done
           ./gradlew assembleRelease --no-daemon
 
       - name: 📤 Upload APK Artifact
